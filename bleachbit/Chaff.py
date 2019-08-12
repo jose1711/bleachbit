@@ -19,8 +19,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
-import email.generator
-from email.mime.text import MIMEText
 import json
 import logging
 import os
@@ -38,7 +36,6 @@ else:
 from bleachbit import _
 from bleachbit import options_dir
 
-import markovify
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +61,8 @@ def _load_model(model_path):
         import bz2
         _open = bz2.BZ2File
     with _open(model_path, 'r') as model_file:
-        return markovify.Text.from_dict(json.load(model_file))
+        from bleachbit.markovify import Text
+        return Text.from_dict(json.load(model_file))
 
 
 def load_subject_model(model_path):
@@ -95,6 +93,7 @@ def _get_random_content(content_model, number_of_sentences=DEFAULT_NUMBER_OF_SEN
     for _ in range(number_of_sentences):
         content.append(content_model.make_sentence())
         content.append(random.choice([' ', ' ', '\n\n']))
+    from email.mime.text import MIMEText
     try:
         return MIMEText(''.join(content))
     except UnicodeEncodeError:
@@ -167,6 +166,7 @@ def generate_emails(number_of_emails,
     generated_file_names = []
     for i in range(1, number_of_emails + 1):
         with tempfile.NamedTemporaryFile(prefix='outlook-', suffix='.eml', dir=email_output_dir, delete=False) as email_output_file:
+            import email.generator
             email_generator = email.generator.Generator(email_output_file)
             msg = _generate_email(
                 subject_model, content_model, number_of_sentences=number_of_sentences)
